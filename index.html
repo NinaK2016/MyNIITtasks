@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>ToDo</title>
+		<!--<link rel="stylesheet" href="index.css">-->
+		<style>
+			.txtclass {text-decoration: line-through}
+		</style>
+	</head>
+	<body>
+		<h1>ToDo list</h1>
+		<input id="set" type="text" placeholder="What needs to be done?" autofocus>
+        <ul id="list" type="none"></ul>
+        <div id="sets-count">Count: <span>0</span></div><br>
+		<button id="all-sets">All</button>
+		<button id="active-sets">Active</button>
+		<button id="completed-sets">Completed</button><br><br>
+		<button id="all-completed">All completed</button>
+		<button id="delete-completed">Delete completed</button>
+		<script>
+            var i = 0;
+			document.querySelector('#set').addEventListener('keyup', function(event) {
+				if(event.keyCode == 13){
+                  i++;
+				  //Чтение введённого текста и очистка инпута.
+                  var txtSet = document.querySelector('#set').value;
+                  document.querySelector('#set').value = "";
+                  //Добавление нового задания с чекбоксом в список.
+                  var newLi = document.createElement('li');
+                  var newLabel = document.createElement('label');
+                  var newInput = document.createElement('input');
+                  newInput.type = "checkbox";
+                  newLabel.textContent = txtSet;
+                  document.querySelector('#list').appendChild(newLi);
+                  //document.querySelector('li').appendChild(newLabel);
+                  //document.querySelector('lable').appendChild(newInput);
+                  document.querySelector('#list').appendChild(newInput);
+                  document.querySelector('#list').appendChild(newLabel);
+                  //Обновление чсётчика заданий.
+                  var oldSpan = document.querySelector('span');
+                  //span.parentElement.removeChild(oldSpan);
+                  document.querySelector('#sets-count').removeChild(oldSpan);
+                  var newSpan = document.createElement('span');
+                  newSpan.textContent = i;
+                  document.querySelector('#sets-count').appendChild(newSpan);
+                }
+			});
+		</script>
+	</body>
+</html>
