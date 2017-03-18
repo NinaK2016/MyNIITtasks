@@ -1,0 +1,152 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>ToDo</title>
+		<!--<link rel="stylesheet" href="index.css">-->
+		<style>
+			#list {
+				list-style: none;
+			}
+			.done {
+				text-decoration: line-through;
+				color: grey;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>ToDo list</h1>
+		<input id="set" type="text" placeholder="What needs to be done?" autofocus>
+        <ul id="list"></ul>
+        <div id="sets-count">Count: <span></span></div><br>
+		<button id="all-sets">All</button>
+		<button id="active-sets">Active</button>
+		<button id="done-sets">Completed</button><br><br>
+		<button id="all-done">All completed</button>
+		<button id="delete-done">Delete completed</button>
+		<script>
+            var count = 0; //Счётчик заданий.
+			var myList; //Список заданий.
+			var idList = []; //Массив идентификаторов заданий.
+			//Обработчик добавления новых заданий через текстовый инпут.
+			document.querySelector('#set').addEventListener('keyup', function(event) {
+				var txtSet = document.querySelector('#set').value; //Текст введённого задания.
+				if (event.keyCode == 13 && txtSet != "") {
+                    fetch('http://localhost:3001/todo', {
+                        method: 'POST',
+						headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({'text': txtSet})
+                    })
+                        .then(res => res.json())
+                        .then(json => {
+                            let idSet = json.id;
+                            setList(idSet, txtSet, false);
+                        });
+				}
+			});
+			//Функция добавления новых заданий на страницу.
+			function setList(id, text, done) {
+				idList[count] = id;
+				count++;
+				//Добавление нового задания с чекбоксом в список.
+				var newLi = document.createElement('li');
+				var newInput = document.createElement('input');
+				newInput.type = "checkbox";
+				newInput.addEventListener('change', function() {
+					newLi.classList.toggle('done');
+					document.querySelector('#set').focus();
+				});
+				var newLabel = document.createElement('label');
+				newLabel.textContent = text;
+				newLi.appendChild(newInput);
+				newLi.appendChild(newLabel);
+				document.querySelector('#list').appendChild(newLi);
+				if(done) {
+                    newInput.checked = true;
+                    newLi.classList.add('done');
+                }
+				//Обновление счётчика заданий.
+				document.querySelector('span').textContent = count;
+				//Очистка текстового инпута.
+				document.querySelector('#set').value = "";
+				//Запоминание списка заданий.
+				myList = document.querySelectorAll('li');
+			}
+			//Обработчик кнопки "Все задания".
+			document.querySelector('#all-sets').addEventListener("click", function(event) {
+				for (var i = 0; i < count; i++)
+					if(myList[i].style.display = 'none')
+						myList[i].style.display = 'block';
+				document.querySelector('span').textContent = count + " all";
+				document.querySelector('#set').focus();
+			});
+			//Обработчик кнопки "Активные задания".
+			document.querySelector('#active-sets').addEventListener("click", function(event) {
+				for (var i = 0, j = 0; i < count; i++) {
+					if(myList[i].classList.contains('done')) {
+						myList[i].style.display = 'none';
+					} else {
+						j++;
+						myList[i].style.display = 'block';
+					}
+				}
+				document.querySelector('span').textContent = j + " active";
+				document.querySelector('#set').focus();
+			});
+			//Обработчик кнопки "Выполненные задания".
+			document.querySelector('#done-sets').addEventListener("click", function(event) {
+				for (var i = 0, j = 0; i < count; i++) {
+					if(!myList[i].classList.contains('done')) {
+						myList[i].style.display = 'none';
+					}else {
+						j++;
+						myList[i].style.display = 'block';
+					}
+				}
+				document.querySelector('span').textContent = j + " completed";
+				document.querySelector('#set').focus();
+			});
+			//Обработчик кнопки "Все задания выполнены".
+			document.querySelector('#all-done').addEventListener("click", function(event) {
+				for (var i = 0; i < count; i++) {
+					if(!myList[i].classList.contains('done')) {
+						myList[i].querySelector('input').checked = true;
+						myList[i].classList.add('done');
+					}
+					if(myList[i].style.display === 'none')
+						myList[i].style.display = 'block';
+				}
+				document.querySelector('span').textContent = count + " all completed";
+				document.querySelector('#set').focus();
+			});
+			//Обработчик кнопки "Удалить выполненные задания".
+			document.querySelector('#delete-done').addEventListener("click", function(event) {
+				for (var i = 0, j = count; i < count; i++) {
+					if(myList[i].classList.contains('done')) {
+						document.querySelector('ul').removeChild(myList[i]);
+						j--;
+						fetch('http://localhost:3001/todos-delete', {
+							method: 'POST',
+							headers: {'Content-Type': 'application/json'},
+							body: JSON.stringify({'ids': idList[i]})
+						})
+					}
+				}
+				count = j;
+				document.querySelector('span').textContent = count + " all";
+				myList = document.querySelectorAll('li');
+				document.querySelector('#set').focus();
+			});
+			//Запрос существующего списка заданий.
+			fetch('http://localhost:3001/todos')
+				.then(res => res.json())
+                .then(json => {
+                    console.log(json);
+                    for (let i = 0; i < json.length; i++) {
+                        let todo = json[i];
+                        setList(todo.id, todo.text, todo.done);
+                    }
+                });
+		</script>
+	</body>
+</html>
