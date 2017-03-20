@@ -53,8 +53,13 @@
 				var newInput = document.createElement('input');
 				newInput.type = "checkbox";
 				newInput.addEventListener('change', function() {
-					newLi.classList.toggle('done');
+					var chLi = newLi.classList.toggle('done');
 					document.querySelector('#set').focus();
+					fetch('http://localhost:3001/todo', {
+                        method: 'PUT',
+						headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({'done': chLi,'id': id})
+                    })
 				});
 				var newLabel = document.createElement('label');
 				newLabel.textContent = text;
@@ -112,30 +117,42 @@
 					if(!myList[i].classList.contains('done')) {
 						myList[i].querySelector('input').checked = true;
 						myList[i].classList.add('done');
+						fetch('http://localhost:3001/todo', {
+							method: 'PUT',
+							headers: {'Content-Type': 'application/json'},
+							body: JSON.stringify({'done': 'true','id': idList[i]})
+						})
 					}
-					if(myList[i].style.display === 'none')
-						myList[i].style.display = 'block';
+					myList[i].style.display = 'block';
 				}
 				document.querySelector('span').textContent = count + " all completed";
 				document.querySelector('#set').focus();
 			});
 			//Обработчик кнопки "Удалить выполненные задания".
 			document.querySelector('#delete-done').addEventListener("click", function(event) {
-				for (var i = 0, j = count; i < count; i++) {
+				var idDel = []; //Массив идентификаторов удаляемых заданий.
+				var idAct = []; //Массив идентификаторов активных заданий.
+				for (var i = 0, j = 0, k = 0; i < count; i++) {
 					if(myList[i].classList.contains('done')) {
+						idDel[j] = idList[i];
 						document.querySelector('ul').removeChild(myList[i]);
-						j--;
-						fetch('http://localhost:3001/todos-delete', {
-							method: 'POST',
-							headers: {'Content-Type': 'application/json'},
-							body: JSON.stringify({'ids': idList[i]})
-						})
+						j++;
+					}
+					else {
+						idAct[k] = idList[i];
+						k++;
 					}
 				}
-				count = j;
+				count = k;
+				idList = idAct;
 				document.querySelector('span').textContent = count + " all";
 				myList = document.querySelectorAll('li');
 				document.querySelector('#set').focus();
+				fetch('http://localhost:3001/todos-delete', {
+					method: 'POST',
+					headers: {'Content-Type': 'application/json'},
+					body: JSON.stringify({'ids': idDel})
+				})
 			});
 			//Запрос существующего списка заданий.
 			fetch('http://localhost:3001/todos')
