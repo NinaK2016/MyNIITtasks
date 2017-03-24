@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>ToDo React</title>
+    <script src="https://unpkg.com/react@15/dist/react.js"></script>
+    <script src="https://unpkg.com/react-dom@15/dist/react-dom.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+		<style>
+      ul {list-style: none;}
+			.done {
+				text-decoration: line-through;
+				color: grey;
+			}
+    </style>
+	</head>
+	<body>
+		<div id="react-root"></div>
+    <script type="text/babel">
+			class TodoItem extends React.Component {
+				changeItem(done, id) {
+					fetch('http://localhost:3001/todo', {
+          	method: 'PUT',
+						headers: {"content-type": "application/json"},
+            body: JSON.stringify({'done': done,'id': id})
+          })
+						.then(res => {
+							if(res.status == 200) {
+								this.props.onChangeItem(id);
+							}
+						})
+				}
+				deleteItem(id) {
+					fetch('http://localhost:3001/todos-delete', {
+						method: 'POST',
+						headers: {"content-type": "application/json"},
+						body: JSON.stringify({ids: [id]})
+					})
+						.then(res => {
+							if(res.status == 200) {
+								this.props.onDeleteItem(id);
+							}
+						})
+				}
+				render() {
+					let changeDone = this.props.done;
+					let classes = changeDone ? "done" : "";
+					return (<li>
+						<label>
+							<input type="checkbox" checked={changeDone} onChange={() =>
+								this.changeItem(!changeDone, this.props.id)}/>
+							<span className={classes}>{this.props.text}</span>
+							<button onClick={() =>
+									this.deleteItem(this.props.id)}>x</button>
+						</label>
+					</li>)
+				}
+			}
+
+			class TodoList extends React.Component {
+				constructor() {
+					super();
+					this.state = { todos: [] };
+				}
+				changeDone = (id) => {
+						let newTodos = this.state.todos;
+						for (let i=0; i<newTodos.length; i++)
+							if (newTodos[i].id == id)
+								newTodos[i].done = !newTodos[i].done;
+						this.setState({todos: newTodos});
+				}
+				removeFromTodos = (id) => {
+					let todos = this.state.todos;
+					let newTodos = todos.filter(todo => todo.id != id);
+					this.setState({todos: newTodos});
+				}
+				setList(id, text, done) {
+					let newTodos = this.state.todos;
+					newTodos[newTodos.length] = {id, id, text, done};
+					this.setState({todos: newTodos});
+				}
+				componentDidMount() {
+					fetch('http://localhost:3001/todos')
+						.then(res => res.json())
+						.then(json => this.setState({todos: json}))
+				}
+				handleKeyUp = (event) => {
+					let txtSet = this.refs.set.value;
+					if (event.key == "Enter" && txtSet != "") {
+          	fetch('http://localhost:3001/todo', {
+            	method: 'POST',
+							headers: {"content-type": "application/json"},
+              body: JSON.stringify({'text': txtSet})
+          	})
+          		.then(res => res.json())
+              .then(json => {
+              	let idSet = json.id;
+                this.setList(idSet, txtSet, false);
+              })
+							.then(()=> {
+              	this.refs.set.value = "";
+              });
+					}
+				}
+				render() {
+					return (<div>
+						<h1>ToDo list</h1>
+						<input ref="set" type="text"
+							placeholder="What needs to be done?" autoFocus
+							onKeyUp={this.handleKeyUp}
+						/>
+						<ul>
+							{this.state.todos.map(todo =>
+								<TodoItem key={todo.id}
+									id={todo.id}
+									done={todo.done}
+									text={todo.text}
+									onChangeItem={this.changeDone}
+									onDeleteItem={this.removeFromTodos}
+								/>
+							)}
+						</ul>
+						<div>Count: <span></span></div><br/>
+						<button onClick={()=>
+	          	this.submit()}>
+	              All
+	          </button>
+						<button onClick={()=>
+	          	this.submit()}>
+	              Active
+	          </button>
+						<button onClick={()=>
+	          	this.submit()}>
+	              Completed
+	          </button><br/><br/>
+						<button onClick={()=>
+	          	this.submit()}>
+	              All completed
+	          </button>
+						<button onClick={()=>
+	          	this.submit()}>
+	              Delete completed
+	          </button>
+					</div>);
+				}
+			}
+			ReactDOM.render(<TodoList/>, document.querySelector('#react-root'));
+		</script>
+	</body>
+</html>
